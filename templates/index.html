@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    Library Manager
+                </h1>
+                <p class="subtitle">Manage your book collection with ease</p>
+            </div>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-total">{{ stats.total }}</span>
+                        <span class="stat-label">Total Books</span>
+                    </div>
+                </div>
+                <div class="stat-card available">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-available">{{ stats.available }}</span>
+                        <span class="stat-label">Available</span>
+                    </div>
+                </div>
+                <div class="stat-card issued">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-issued">{{ stats.issued }}</span>
+                        <span class="stat-label">Issued</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Add Book Form -->
+            <section class="card add-book-section">
+                <div class="card-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add New Book
+                    </h2>
+                </div>
+                <form id="add-book-form" class="book-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="book-title">Title</label>
+                            <input type="text" id="book-title" name="title" placeholder="Enter book title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="book-author">Author</label>
+                            <input type="text" id="book-author" name="author" placeholder="Enter author name" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Book
+                    </button>
+                </form>
+            </section>
+
+            <!-- Books Table -->
+            <section class="card books-section">
+                <div class="card-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                        Book Catalog
+                    </h2>
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="search-input" placeholder="Search books...">
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="books-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-tbody">
+                            {% for book in books %}
+                            <tr data-id="{{ book.id }}">
+                                <td>{{ book.id }}</td>
+                                <td>{{ book.title }}</td>
+                                <td>{{ book.author }}</td>
+                                <td>
+                                    <span class="status-badge {% if book.is_issued %}status-issued{% else %}status-available{% endif %}">
+                                        {% if book.is_issued %}Issued{% else %}Available{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        {% if book.is_issued %}
+                                        <button class="btn btn-sm btn-return" data-id="{{ book.id }}" title="Return Book">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                                <path d="M3 3v5h5"/>
+                                            </svg>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-issue" data-id="{{ book.id }}" title="Issue Book">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    {% if not books %}
+                    <div class="empty-state" id="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                        <p>No books in the library yet</p>
+                        <span>Add your first book using the form above</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Library Management System &copy; 2026</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

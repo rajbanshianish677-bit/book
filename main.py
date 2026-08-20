@@ -135,5 +135,30 @@ def main():
             print("Error: Invalid choice. Please select 1 through 5.")
 
 
+def run_web():
+    """Run the web UI version."""
+    import subprocess
+    import sys
+    import os
+    
+    # Get the directory of this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    app_path = os.path.join(script_dir, 'app.py')
+    
+    print("Starting Library Management Web UI...")
+    print("Open http://localhost:5000 in your browser")
+    print("Press Ctrl+C to stop the server")
+    
+    try:
+        subprocess.run([sys.executable, app_path], cwd=script_dir)
+    except KeyboardInterrupt:
+        print("\nWeb server stopped.")
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == '--web':
+        run_web()
+    else:
+        main()
