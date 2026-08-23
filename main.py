@@ -1,4 +1,11 @@
 import sqlite3
+import os
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Default librarian account seeded on first run (must match app.py)
+DEFAULT_LIBRARIAN_USERNAME = os.environ.get("LIBRARIAN_USERNAME", "librarian")
+DEFAULT_LIBRARIAN_PASSWORD = os.environ.get("LIBRARIAN_PASSWORD", "admin123")
 
 
 class LibraryManager:
@@ -6,10 +13,12 @@ class LibraryManager:
     def __init__(self, db_name="library.db"):
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
+        self.role = None
+        self.username = None
         self.setup_database()
 
     def setup_database(self):
-        """Creates the books table if it doesn't exist."""
+        """Creates the books and users tables if they don't exist."""
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS books (
@@ -20,7 +29,109 @@ class LibraryManager:
             )
         """
         )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                school_id TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('librarian', 'student')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
         self.conn.commit()
+
+        # Seed a default librarian if no librarian exists
+        existing = self.cursor.execute(
+            "SELECT 1 FROM users WHERE role = 'librarian' LIMIT 1"
+        ).fetchone()
+        if not existing:
+            self.cursor.execute(
+                """
+                INSERT INTO users (school_id, email, username, password_hash, role)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    "LIB-1",
+                    "librarian@library.local",
+                    DEFAULT_LIBRARIAN_USERNAME,
+                    generate_password_hash(DEFAULT_LIBRARIAN_PASSWORD),
+                    "librarian",
+                ),
+            )
+            self.conn.commit()
+
+    # ---------- Authentication ----------
+
+    def login(self):
+        """Prompt for credentials and authenticate against the users table."""
+        print("\n=== Login ===")
+        identifier = input("Username/Email/School ID: ").strip()
+        password = input("Password: ")
+
+        row = self.cursor.execute(
+            "SELECT * FROM users WHERE username = ? OR email = ? OR school_id = ?",
+            (identifier, identifier, identifier),
+        ).fetchone()
+
+        # row is a plain tuple: (id, school_id, email, username, password_hash, role, created_at)
+        if row and check_password_hash(row[4], password):
+            self.role = row[5]
+            self.username = row[3]
+            print(f"Success: Logged in as {self.username} ({self.role}).")
+            return True
+
+        print("Error: Invalid credentials.")
+        return False
+
+    def is_librarian(self):
+        return self.role == "librarian"
+
+    def search_book(self, query):
+        """Search by book ID or exact title/author (available to students)."""
+        query = query.strip()
+        if not query:
+            return
+
+        books = []
+        if query.isdigit():
+            row = self.cursor.execute(
+                "SELECT id, title, author, is_issued FROM books WHERE id = ?",
+                (int(query),),
+            ).fetchone()
+            if row:
+                books.append(row)
+
+        rows = self.cursor.execute(
+            """
+            SELECT id, title, author, is_issued FROM books
+            WHERE LOWER(title) = LOWER(?) OR LOWER(author) = LOWER(?)
+            """,
+            (query, query),
+        ).fetchall()
+        books.extend(rows)
+
+        # Deduplicate
+        seen = set()
+        unique = []
+        for b in books:
+            b_id = b[0]
+            if b_id not in seen:
+                seen.add(b_id)
+                unique.append(b)
+
+        if not unique:
+            print("\nNo books match your search.")
+            return
+
+        print("\n--- Search Results ---")
+        for book_id, title, author, is_issued in unique:
+            status = "Issued" if is_issued else "Available"
+            print(f"ID: {book_id} | Title: {title} | Author: {author} | Status: {status}")
+        print("-" * 28)
 
     def add_book(self, title, author):
         """Add a new book to the library."""
@@ -91,15 +202,31 @@ class LibraryManager:
 def main():
     library = LibraryManager()
 
+    # Authenticate first
+    if not library.login():
+        library.close()
+        return
+
+    if library.is_librarian():
+        run_librarian_menu(library)
+    else:
+        run_student_menu(library)
+
+    library.close()
+
+
+def run_librarian_menu(library):
+    """Librarian gets the full management menu."""
     while True:
-        print("\n=== Library Management System ===")
+        print("\n=== Library Management System (Librarian) ===")
         print("1. Add Book")
         print("2. View All Books")
         print("3. Issue Book")
         print("4. Return Book")
-        print("5. Exit")
+        print("5. Search Book")
+        print("6. Logout")
 
-        choice = input("Select an option (1-5): ").strip()
+        choice = input("Select an option (1-6): ").strip()
 
         if choice == "1":
             title = input("Enter book title: ").strip()
@@ -127,12 +254,36 @@ def main():
                 print("Error: Please enter a valid numerical ID.")
 
         elif choice == "5":
-            library.close()
-            print("Exiting system. Goodbye!")
+            query = input("Enter Book ID or exact title/author: ").strip()
+            library.search_book(query)
+
+        elif choice == "6":
+            print("Logging out. Goodbye!")
             break
 
         else:
-            print("Error: Invalid choice. Please select 1 through 5.")
+            print("Error: Invalid choice. Please select 1 through 6.")
+
+
+def run_student_menu(library):
+    """Student gets a search-only menu."""
+    while True:
+        print("\n=== Library Management System (Student) ===")
+        print("1. Search Book (by ID or exact name)")
+        print("2. Logout")
+
+        choice = input("Select an option (1-2): ").strip()
+
+        if choice == "1":
+            query = input("Enter Book ID or exact title/author: ").strip()
+            library.search_book(query)
+
+        elif choice == "2":
+            print("Logging out. Goodbye!")
+            break
+
+        else:
+            print("Error: Invalid choice. Please select 1 or 2.")
 
 
 def run_web():

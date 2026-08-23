@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body data-role="{{ role }}">
     <div class="app-container">
         <!-- Header -->
         <header class="header">
@@ -23,9 +23,26 @@
                 </h1>
                 <p class="subtitle">Manage your book collection with ease</p>
             </div>
+            <div class="header-actions">
+                <span class="user-badge role-{{ role }}">
+                    {{ current_user.username }} ({{ role | capitalize }})
+                </span>
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">Logout</a>
+            </div>
         </header>
 
-        <!-- Stats Dashboard -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container inline">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if role == 'librarian' %}
+        <!-- Stats Dashboard (librarian only) -->
         <section class="stats-section">
             <div class="stats-grid">
                 <div class="stat-card total">
@@ -68,7 +85,7 @@
             </div>
         </section>
 
-        <!-- Main Content -->
+        <!-- Main Content (librarian) -->
         <main class="main-content">
             <!-- Add Book Form -->
             <section class="card add-book-section">
@@ -120,7 +137,7 @@
                         <input type="text" id="search-input" placeholder="Search books...">
                     </div>
                 </div>
-                
+
                 <div class="table-container">
                     <table id="books-table">
                         <thead>
@@ -165,7 +182,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    
+
                     {% if not books %}
                     <div class="empty-state" id="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -179,6 +196,67 @@
                 </div>
             </section>
         </main>
+
+        {% else %}
+        <!-- Student View: search-only -->
+        <main class="main-content">
+            <section class="card student-search-section">
+                <div class="card-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        Search the Library
+                    </h2>
+                </div>
+                <p class="student-hint">
+                    Search for a book by its <strong>book ID</strong> or by its exact <strong>title/author</strong> to check availability.
+                </p>
+                <div class="search-box student-search">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="student-search-input" placeholder="Enter book ID or exact title/author...">
+                    <button id="student-search-btn" class="btn btn-primary btn-search">Search</button>
+                </div>
+            </section>
+
+            <section class="card student-results-section">
+                <div class="card-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                        Search Results
+                    </h2>
+                </div>
+                <div class="table-container">
+                    <table id="books-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-tbody"></tbody>
+                    </table>
+                    <div class="empty-state" id="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                        <p>No books found</p>
+                        <span>Search for a book by ID or exact name to check availability</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+        {% endif %}
 
         <!-- Footer -->
         <footer class="footer">
