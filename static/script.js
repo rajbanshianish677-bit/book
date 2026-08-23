@@ -2,27 +2,25 @@
    Library Management System - JavaScript
    ======================================== */
 
-// Determine role from body data-attribute
-const ROLE = document.body.getAttribute('data-role') || 'librarian';
-const IS_LIBRARIAN = ROLE === 'librarian';
-
 // DOM Elements
-const addBookForm = document.getElementById('add-book-form');
-const bookTitleInput = document.getElementById('book-title');
-const bookAuthorInput = document.getElementById('book-author');
 const booksTbody = document.getElementById('books-tbody');
 const searchInput = document.getElementById('search-input');
 const emptyState = document.getElementById('empty-state');
 const toastContainer = document.getElementById('toast-container');
 
+// Role is injected from the server as a data attribute on <body>
+const userRole = document.body.dataset.role || 'student';
+const IS_LIBRARIAN = userRole === 'librarian';
+
+// Librarian-only DOM elements
+const addBookForm = document.getElementById('add-book-form');
+const bookTitleInput = document.getElementById('book-title');
+const bookAuthorInput = document.getElementById('book-author');
+
 // Stat elements
 const statTotal = document.getElementById('stat-total');
 const statAvailable = document.getElementById('stat-available');
 const statIssued = document.getElementById('stat-issued');
-
-// Student-specific elements
-const studentSearchInput = document.getElementById('student-search-input');
-const studentSearchBtn = document.getElementById('student-search-btn');
 
 // API Base URL
 const API_BASE = '/api';
@@ -38,20 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Event Listeners
 function setupEventListeners() {
-    if (IS_LIBRARIAN) {
-        // Add book form submission
-        if (addBookForm) addBookForm.addEventListener('submit', handleAddBook);
-        // Search input
-        if (searchInput) searchInput.addEventListener('input', debounce(handleSearch, 300));
-        // Event delegation for action buttons
-        if (booksTbody) booksTbody.addEventListener('click', handleActionClick);
-    } else {
-        // Student search
-        if (studentSearchBtn) studentSearchBtn.addEventListener('click', handleStudentSearch);
-        if (studentSearchInput) {
-            studentSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') handleStudentSearch();
-            });
+    if (IS_LIBRARIAN && addBookForm) {
+        // Add book form submission (librarian only)
+        addBookForm.addEventListener('submit', handleAddBook);
+        // Event delegation for action buttons (librarian only)
+        booksTbody.addEventListener('click', handleActionClick);
+    }
+    // Search input - librarian searches client-side, student searches server-side
+    if (searchInput) {
+        if (IS_LIBRARIAN) {
+            searchInput.addEventListener('input', debounce(handleSearch, 300));
+        } else {
+            searchInput.addEventListener('input', debounce(handleStudentSearch, 300));
         }
     }
 }
@@ -71,7 +67,6 @@ function debounce(func, wait) {
 
 // Show toast notification
 function showToast(message, type = 'info') {
-    if (!toastContainer) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
@@ -108,7 +103,6 @@ function removeToast(toast) {
 
 // Set button loading state
 function setButtonLoading(button, loading) {
-    if (!button) return;
     if (loading) {
         button.classList.add('loading');
         button.disabled = true;
@@ -137,9 +131,7 @@ async function apiCall(endpoint, options = {}) {
     return data;
 }
 
-// ---- Librarian functions ----
-
-// Load all books
+// Load all books (librarian)
 async function loadBooks() {
     try {
         const books = await apiCall('/books');
@@ -150,7 +142,7 @@ async function loadBooks() {
     }
 }
 
-// Load statistics
+// Load statistics (librarian)
 async function loadStats() {
     try {
         const stats = await apiCall('/stats');
@@ -206,7 +198,8 @@ function renderBooks(books) {
                           </button>`
                     }
                 </div>
-            </td>` : ''}
+            </td>`
+            : ''}
         </tr>
     `).join('');
 }
@@ -218,10 +211,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Handle add book form submission
+// Handle add book form submission (librarian)
 async function handleAddBook(event) {
     event.preventDefault();
-    if (!addBookForm) return;
 
     const title = bookTitleInput.value.trim();
     const author = bookAuthorInput.value.trim();
@@ -251,9 +243,8 @@ async function handleAddBook(event) {
     }
 }
 
-// Handle action button clicks (issue/return)
+// Handle action button clicks (issue/return) - librarian only
 async function handleActionClick(event) {
-    if (!IS_LIBRARIAN) return;
     const button = event.target.closest('button');
     if (!button) return;
 
@@ -285,9 +276,8 @@ async function handleActionClick(event) {
     }
 }
 
-// Handle librarian client-side search (matches title/author partial)
+// Handle client-side search (librarian)
 function handleSearch(event) {
-    if (!IS_LIBRARIAN) return;
     const query = event.target.value.toLowerCase();
     const rows = booksTbody.querySelectorAll('tr');
 
@@ -305,6 +295,7 @@ function handleSearch(event) {
         }
     });
 
+    // Show/hide empty state based on search results
     if (emptyState) {
         if (visibleCount === 0 && query) {
             emptyState.style.display = 'flex';
@@ -320,37 +311,50 @@ function handleSearch(event) {
     }
 }
 
-// ---- Student functions ----
-
-// Student searches by ID or exact title/author
-async function handleStudentSearch() {
-    if (!studentSearchInput) return;
-    const query = studentSearchInput.value.trim();
+// Handle server-side search (student) - by book ID or exact title/author
+async function handleStudentSearch(event) {
+    const query = event.target.value.trim();
 
     if (!query) {
-        showToast('Please enter a book ID or name', 'error');
+        renderBooks([]);
         return;
     }
 
-    setButtonLoading(studentSearchBtn, true);
-
     try {
         const books = await apiCall(`/books/search?q=${encodeURIComponent(query)}`);
-        renderBooks(books);
-
-        // Update empty state message
-        if (emptyState) {
-            if (books.length === 0) {
-                emptyState.style.display = 'flex';
-                emptyState.querySelector('p').textContent = 'No books found';
-                emptyState.querySelector('span').textContent = 'No book matches your search. Check the ID or exact name.';
-            } else {
-                emptyState.style.display = 'none';
-            }
-        }
+        renderStudentResults(books, query);
     } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        setButtonLoading(studentSearchBtn, false);
+        console.error('Failed to search books:', error);
+        showToast('Failed to search books', 'error');
     }
+}
+
+// Render student search results
+function renderStudentResults(books, query) {
+    if (!booksTbody) return;
+
+    if (books.length === 0) {
+        booksTbody.innerHTML = '';
+        if (emptyState) {
+            emptyState.style.display = 'flex';
+            emptyState.querySelector('p').textContent = 'No matching book found';
+            emptyState.querySelector('span').textContent = `No book matches "${query}". Check the ID or exact title.`;
+        }
+        return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+
+    booksTbody.innerHTML = books.map(book => `
+        <tr data-id="${book.id}">
+            <td>${book.id}</td>
+            <td>${escapeHtml(book.title)}</td>
+            <td>${escapeHtml(book.author)}</td>
+            <td>
+                <span class="status-badge ${book.is_issued ? 'status-issued' : 'status-available'}">
+                    ${book.is_issued ? 'Issued' : 'Available'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
 }

@@ -21,28 +21,33 @@
                     </svg>
                     Library Manager
                 </h1>
-                <p class="subtitle">Manage your book collection with ease</p>
+                <div class="header-actions">
+                    <span class="role-badge {{ role }}">{{ 'Librarian' if role == 'librarian' else 'Student' }}</span>
+                    <span class="user-name">{{ current_user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">Logout</a>
+                </div>
             </div>
-            <div class="header-actions">
-                <span class="user-badge role-{{ role }}">
-                    {{ current_user.username }} ({{ role | capitalize }})
-                </span>
-                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">Logout</a>
-            </div>
+            <p class="subtitle">
+                {% if role == 'librarian' %}
+                Manage your book collection with ease
+                {% else %}
+                Search the library catalog
+                {% endif %}
+            </p>
         </header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-container inline">
-            {% for category, message in messages %}
-                <div class="flash-message {{ category }}">{{ message }}</div>
-            {% endfor %}
-            </div>
-        {% endif %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% endwith %}
 
         {% if role == 'librarian' %}
-        <!-- Stats Dashboard (librarian only) -->
+        <!-- Stats Dashboard (Librarian only) -->
         <section class="stats-section">
             <div class="stats-grid">
                 <div class="stat-card total">
@@ -85,7 +90,7 @@
             </div>
         </section>
 
-        <!-- Main Content (librarian) -->
+        <!-- Main Content (Librarian) -->
         <main class="main-content">
             <!-- Add Book Form -->
             <section class="card add-book-section">
@@ -119,7 +124,7 @@
                 </form>
             </section>
 
-            <!-- Books Table -->
+            <!-- Books Table (Librarian) -->
             <section class="card books-section">
                 <div class="card-header">
                     <h2>
@@ -137,7 +142,7 @@
                         <input type="text" id="search-input" placeholder="Search books...">
                     </div>
                 </div>
-
+                
                 <div class="table-container">
                     <table id="books-table">
                         <thead>
@@ -182,7 +187,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-
+                    
                     {% if not books %}
                     <div class="empty-state" id="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -196,43 +201,31 @@
                 </div>
             </section>
         </main>
-
         {% else %}
-        <!-- Student View: search-only -->
+        <!-- Main Content (Student) -->
         <main class="main-content">
-            <section class="card student-search-section">
+            <!-- Student Search Section -->
+            <section class="card books-section student-search-section">
                 <div class="card-header">
                     <h2>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        Search the Library
+                        Search the Catalog
                     </h2>
                 </div>
-                <p class="student-hint">
-                    Search for a book by its <strong>book ID</strong> or by its exact <strong>title/author</strong> to check availability.
-                </p>
-                <div class="search-box student-search">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input type="text" id="student-search-input" placeholder="Enter book ID or exact title/author...">
-                    <button id="student-search-btn" class="btn btn-primary btn-search">Search</button>
-                </div>
-            </section>
-
-            <section class="card student-results-section">
-                <div class="card-header">
-                    <h2>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                <div class="student-search-box">
+                    <div class="search-box search-box-lg">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        Search Results
-                    </h2>
+                        <input type="text" id="search-input" placeholder="Enter book ID or exact title / author..." >
+                    </div>
+                    <p class="search-hint">Search by Book ID or exact title/author name to check availability.</p>
                 </div>
+                
                 <div class="table-container">
                     <table id="books-table">
                         <thead>
@@ -245,13 +238,14 @@
                         </thead>
                         <tbody id="books-tbody"></tbody>
                     </table>
+
                     <div class="empty-state" id="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        <p>No books found</p>
-                        <span>Search for a book by ID or exact name to check availability</span>
+                        <p>Search to find a book</p>
+                        <span>Enter a book ID or exact title to check availability</span>
                     </div>
                 </div>
             </section>

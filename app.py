@@ -314,18 +314,23 @@ def search_books():
 def issue_book(book_id):
     """API: issue a book (librarian only)."""
     conn = get_db_connection()
-    row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
-    if row is None:
+    book = conn.execute(
+        "SELECT is_issued FROM books WHERE id = ?", (book_id,)
+    ).fetchone()
+
+    if not book:
         conn.close()
         return jsonify({"error": "Book not found"}), 404
-    if row["is_issued"]:
+
+    if book["is_issued"]:
         conn.close()
         return jsonify({"error": "Book is already issued"}), 400
 
     conn.execute("UPDATE books SET is_issued = 1 WHERE id = ?", (book_id,))
     conn.commit()
     conn.close()
-    return jsonify({"message": "Book issued successfully"})
+
+    return jsonify({"message": "Book issued successfully", "is_issued": 1})
 
 
 @app.route("/api/books/<int:book_id>/return", methods=["POST"])
@@ -333,30 +338,40 @@ def issue_book(book_id):
 def return_book(book_id):
     """API: return a book (librarian only)."""
     conn = get_db_connection()
-    row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
-    if row is None:
+    book = conn.execute(
+        "SELECT is_issued FROM books WHERE id = ?", (book_id,)
+    ).fetchone()
+
+    if not book:
         conn.close()
         return jsonify({"error": "Book not found"}), 404
-    if not row["is_issued"]:
+
+    if not book["is_issued"]:
         conn.close()
-        return jsonify({"error": "Book is not currently issued"}), 400
+        return jsonify({"error": "Book was not issued"}), 400
 
     conn.execute("UPDATE books SET is_issued = 0 WHERE id = ?", (book_id,))
     conn.commit()
     conn.close()
-    return jsonify({"message": "Book returned successfully"})
+
+    return jsonify({"message": "Book returned successfully", "is_issued": 0})
 
 
 @app.route("/api/stats", methods=["GET"])
 @role_required("librarian")
 def get_stats():
-    """API: return library stats (librarian only)."""
+    """API: library statistics (librarian only)."""
     conn = get_db_connection()
     books = conn.execute("SELECT * FROM books").fetchall()
     conn.close()
-    total = len(books)
-    issued = sum(1 for b in books if b["is_issued"])
-    return jsonify({"total": total, "issued": issued, "available": total - issued})
+
+    total_books = len(books)
+    issued_books = sum(1 for b in books if b["is_issued"])
+    return jsonify({
+        "total": total_books,
+        "issued": issued_books,
+        "available": total_books - issued_books,
+    })
 
 
 if __name__ == "__main__":
