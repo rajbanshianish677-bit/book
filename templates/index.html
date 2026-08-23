@@ -21,33 +21,19 @@
                     </svg>
                     Library Manager
                 </h1>
-                <div class="header-actions">
-                    <span class="role-badge {{ role }}">{{ 'Librarian' if role == 'librarian' else 'Student' }}</span>
-                    <span class="user-name">{{ current_user.username }}</span>
-                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">Logout</a>
-                </div>
+                <p class="subtitle">{% if role == 'librarian' %}Librarian dashboard{% else %}Student catalog search{% endif %}</p>
             </div>
-            <p class="subtitle">
-                {% if role == 'librarian' %}
-                Manage your book collection with ease
-                {% else %}
-                Search the library catalog
-                {% endif %}
-            </p>
+            <div class="user-bar">
+                <div class="user-info">
+                    <span class="user-name">{{ current_user.username }}</span>
+                    <span class="user-role {{ role }}">{{ current_user.role }}</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">Log Out</a>
+            </div>
         </header>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-container">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
         {% if role == 'librarian' %}
-        <!-- Stats Dashboard (Librarian only) -->
+        <!-- Stats Dashboard -->
         <section class="stats-section">
             <div class="stats-grid">
                 <div class="stat-card total">
@@ -90,7 +76,17 @@
             </div>
         </section>
 
-        <!-- Main Content (Librarian) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Main Content -->
         <main class="main-content">
             <!-- Add Book Form -->
             <section class="card add-book-section">
@@ -124,7 +120,7 @@
                 </form>
             </section>
 
-            <!-- Books Table (Librarian) -->
+            <!-- Books Table -->
             <section class="card books-section">
                 <div class="card-header">
                     <h2>
@@ -200,32 +196,28 @@
                     {% endif %}
                 </div>
             </section>
-        </main>
-        {% else %}
-        <!-- Main Content (Student) -->
-        <main class="main-content">
-            <!-- Student Search Section -->
-            <section class="card books-section student-search-section">
+            {% else %}
+            <!-- Student View: Search Only -->
+            <section class="card books-section">
                 <div class="card-header">
                     <h2>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        Search the Catalog
+                        Search Books
                     </h2>
-                </div>
-                <div class="student-search-box">
-                    <div class="search-box search-box-lg">
+                    <div class="search-box">
                         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        <input type="text" id="search-input" placeholder="Enter book ID or exact title / author..." >
+                        <input type="text" id="search-input" placeholder="Search by book ID or exact title/author...">
                     </div>
-                    <p class="search-hint">Search by Book ID or exact title/author name to check availability.</p>
                 </div>
-                
+                <div class="student-hint">
+                    Search by book ID (e.g. 1) or exact book title/author to check availability.
+                </div>
                 <div class="table-container">
                     <table id="books-table">
                         <thead>
@@ -238,19 +230,18 @@
                         </thead>
                         <tbody id="books-tbody"></tbody>
                     </table>
-
                     <div class="empty-state" id="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <circle cx="11" cy="11" r="8"/>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                         </svg>
-                        <p>Search to find a book</p>
-                        <span>Enter a book ID or exact title to check availability</span>
+                        <p>Search for a book to check its availability</p>
+                        <span>Enter a book ID or exact title/author</span>
                     </div>
                 </div>
             </section>
+            {% endif %}
         </main>
-        {% endif %}
 
         <!-- Footer -->
         <footer class="footer">

@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Library Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="auth-wrapper">
+    <div class="auth-container">
         <div class="auth-card">
-            <div class="auth-brand">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                <h1>Library Manager</h1>
-                <p>Sign in to continue</p>
-            </div>
+            <header class="auth-header">
+                <h1 class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    Library Manager
+                </h1>
+                <p class="subtitle">Log in to access the library system</p>
+            </header>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    <div class="flash-container">
+                    <div class="flash-messages">
                         {% for category, message in messages %}
                             <div class="flash {{ category }}">{{ message }}</div>
                         {% endfor %}
@@ -29,19 +33,21 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+            <form id="login-form" class="auth-form" method="POST" action="{{ url_for('login') }}">
                 <div class="form-group">
-                    <label for="identifier">Username, Email, or School ID</label>
-                    <input type="text" id="identifier" name="identifier" placeholder="Enter your username, email, or school ID" required>
+                    <label for="identifier">Username, Email or School ID</label>
+                    <input type="text" id="identifier" name="identifier" placeholder="Enter your username, email or school ID" required autofocus>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
             </form>
 
-            <p class="auth-alt">Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></p>
+            <p class="auth-footer">
+                Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
+            </p>
         </div>
     </div>
 </body>
